@@ -8,15 +8,18 @@ const cors = require("cors");
 const { MongoClient } = require("mongodb");
 const PDFDocument = require("pdfkit");
 const app = express();
+const dotenv = require("dotenv");
+dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = "mongodb+srv://pipaliyanamasvi:dashboard@dashboard.qk6clff.mongodb.net/?retryWrites=true&w=majority&appName=dashboard";
+const MONGO_URI = process.env.MONGO_URI;
+
 const DB_NAME = "dashboard_db";
 let db;
 
 async function connectDB() {
   try {
-    const client = await MongoClient.connect(MONGO_URI);
+    const client = await MongoClient.connect(process.env.MONGO_URI);
     db = client.db(DB_NAME);
     console.log(" Connected to MongoDB");
   } catch (err) {
