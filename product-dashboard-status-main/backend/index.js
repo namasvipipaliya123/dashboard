@@ -249,7 +249,7 @@ app.get("/profit-graph", async (req, res) => {
     const graphData = result[0].profitByDate || [];
     res.json(graphData);
   } catch (err) {
-    console.error("❌ Profit graph error:", err);
+    console.error(" Profit graph error:", err);
     res.status(500).json({ error: "Failed to generate profit graph data" });
   }
 });
@@ -274,7 +274,7 @@ app.get("/filter/:subOrderNo", async (req, res) => {
       const keys = Object.keys(row).map((k) => k.toLowerCase());
       const subOrderKey = keys.find(
         (k) => k.includes("sub") && k.includes("order")
-      );
+      );  
       if (
         subOrderKey &&
         row[subOrderKey] &&
