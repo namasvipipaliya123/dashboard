@@ -7,9 +7,9 @@ const path = require("path");
 const cors = require("cors");
 const { MongoClient } = require("mongodb");
 const PDFDocument = require("pdfkit");
-
 const app = express();
-const PORT = 5000;
+
+const PORT = process.env.PORT || 5000;
 const MONGO_URI = "mongodb+srv://pipaliyanamasvi:dashboard@dashboard.qk6clff.mongodb.net/?retryWrites=true&w=majority&appName=dashboard";
 const DB_NAME = "dashboard_db";
 let db;
@@ -23,8 +23,6 @@ async function connectDB() {
     console.error(" MongoDB connection failed:", err);
   }
 }
-
-
 app.use(cors());
 app.use(express.json());
 const upload = multer({ dest: "uploads/" });
@@ -41,7 +39,6 @@ const statusList = [
   "supplier_discounted_price",
 ];
 
-// ===== Helpers =====
 function parsePrice(value) {
   if (!value) return 0;
   const clean = value.toString().trim().replace(/[^0-9.\-]/g, "");

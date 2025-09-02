@@ -5,7 +5,12 @@
     { "src": "backend/index.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "backend/index.js" },
+    { "src": "/(.*)", "dest": "backend/index.js" },
     { "src": "/(.*)", "dest": "frontend/build/$1" }
+  ],
+
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
+  

@@ -193,7 +193,6 @@ function App() {
 
   return (
     <div className="App">
-
       <nav className="navbar">
         <div className="navbar-logo">Meesho</div>
         <div className="navbar-search">
@@ -219,7 +218,6 @@ function App() {
           )}
         </div>
       </nav>
-
       <h1 className="heading">Product Status Dashboard</h1>
       {!showFilteredView ? (
         <div className="status-boxes">
@@ -300,7 +298,7 @@ function App() {
 
     {showGraph && graphData.length > 0 && (
   <div className="graph-container">
-    <h2 className="graph-title">📈 Profit Trend (Per Date)</h2>
+    <h2 className="graph-title"> Profit Trend (Per Date)</h2>
     <ResponsiveContainer>
       <LineChart data={graphData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="5 5" stroke="#ddd" />
@@ -367,5 +365,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
