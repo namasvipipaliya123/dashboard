@@ -30,6 +30,7 @@
   font-weight: 800;
   background: linear-gradient(to right, #ffe2f1, #ffc6ec);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: 1px;
 }
@@ -120,6 +121,7 @@ h1 {
   font-weight: 800;
   background: linear-gradient(to right, #ffe2f1, #ffccf5);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: 1px;
 }
@@ -263,6 +265,7 @@ button:hover {
   font-weight: bold;
   background: linear-gradient(to right, #ffeb3b, #ffc107);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 15px;
 }
