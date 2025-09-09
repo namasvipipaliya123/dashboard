@@ -38,32 +38,30 @@ function App() {
   const [dragActive, setDragActive] = useState(false);
   const [showFilteredView, setShowFilteredView] = useState(false);
 
-  // ✅ Download PDF
-  const handleDownload = () => {
-    fetch("https://dashboard-ncjf.onrender.com/download-pdf", {
-      method: "GET",
-      headers: { Accept: "application/pdf" },
+ const handleDownload = () => {
+  fetch("https://dashboard-ncjf.onrender.com/download-pdf", {
+    method: "GET",
+    headers: { Accept: "application/pdf" },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to download");
+      return res.blob();
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to download");
-        return res.blob();
-      })
-      .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "dashboard-report.pdf");
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      })
-      .catch((err) => {
-        console.error("Download error:", err);
-        alert("Failed to download PDF. Please try again.");
-      });
-  };
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "dashboard-report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    })
+    .catch((err) => {
+      console.error("Download error:", err);
+      alert("Failed to download PDF. Please try again.");
+    });
+};
 
-  // ✅ File Validation
   const validateFile = (file) => {
     return (
       file &&
@@ -73,7 +71,6 @@ function App() {
     );
   };
 
-  // ✅ File Input
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (validateFile(selectedFile)) {
@@ -83,7 +80,6 @@ function App() {
     }
   };
 
-  // ✅ Drag & Drop
   const handleDrop = (e) => {
     e.preventDefault();
     setDragActive(false);
@@ -104,7 +100,6 @@ function App() {
     setDragActive(false);
   };
 
-  // ✅ Filter Sub Order
   const handleFilter = async () => {
     if (!subOrderNo) {
       alert("Please enter a Sub Order No.");
@@ -126,7 +121,6 @@ function App() {
     }
   };
 
-  // ✅ Upload & Process File
   const handleSubmitAll = async () => {
     if (!file) {
       alert("Please select a file first");
@@ -198,7 +192,6 @@ function App() {
 
   return (
     <div className="App">
-      {/* Navbar */}
       <nav className="navbar">
         <div className="navbar-logo">Meesho</div>
         <div className="navbar-search">
@@ -226,8 +219,6 @@ function App() {
       </nav>
 
       <h1 className="heading">Product Status Dashboard</h1>
-
-      {/* Main Dashboard */}
       {!showFilteredView ? (
         <div className="status-boxes">
           <div className="box all">All<br /><span>{data.all}</span></div>
@@ -287,8 +278,6 @@ function App() {
           </div>
         )
       )}
-
-      {/* Profit Graph */}
       <div style={{ margin: "20px 0" }}>
         <button
           onClick={() => setShowGraph(!showGraph)}
@@ -331,7 +320,6 @@ function App() {
   </div>
 )}
 
-      {/* File Upload */}
       <div
         className={`upload-section ${dragActive ? "drag-active" : ""}`}
         onDrop={handleDrop}
@@ -343,7 +331,6 @@ function App() {
         {file && <p className="filename">Selected File: {file.name}</p>}
       </div>
 
-      {/* Action Buttons */}
       <div style={{ marginTop: "20px" }}>
         <button
           onClick={handleSubmitAll}

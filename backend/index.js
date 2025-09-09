@@ -6,8 +6,8 @@ const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
 const PDFDocument = require("pdfkit");
+require("pdfkit-table");
 require("dotenv").config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -161,19 +161,15 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "Unsupported file format" });
     }
   } catch (error) {
-    console.error("❌ Error processing file:", error);
+    console.error(" Error processing file:", error);
     return res.status(500).json({ error: "Failed to process file" });
   }
 });
-
-// ===== Save Data (in-memory) =====
 function saveData(rows, res) {
   if (!rows || !rows.length)
     return res.status(400).json({ message: "No data to save" });
 
   const categorized = categorizeRows(rows);
-
-  // build profit by date
   const profitByDate = {};
   rows.forEach((row) => {
     const status = (row["Reason for Credit Entry"] || "").toLowerCase().trim();
@@ -213,7 +209,6 @@ function saveData(rows, res) {
     };
   });
 
-  // Save in memory
   latestData = {
     submittedAt: new Date(),
     data: rows,
@@ -222,81 +217,24 @@ function saveData(rows, res) {
     profitByDate: profitGraphArray,
   };
 
-  console.log("✅ Data stored in memory");
+  console.log(" Data stored in memory");
   return res.json({ ...categorized, profitByDate: profitGraphArray });
 }
 
-// ===== Profit Graph API =====
 app.get("/profit-graph", (req, res) => {
   if (!latestData) return res.status(404).json({ error: "No data found" });
   res.json(latestData.profitByDate || []);
 });
 
-// ===== Filter API =====
-app.get("/filter/:subOrderNo", (req, res) => {
-  if (!latestData) return res.status(404).json({ error: "No data found" });
-
-  const subOrderNo = req.params.subOrderNo.trim().toLowerCase();
-  const rows = latestData.data;
-
-  const match = rows.find((row) => {
-    const keys = Object.keys(row).map((k) => k.toLowerCase());
-    const subOrderKey = keys.find((k) => k.includes("sub") && k.includes("order"));
-    if (
-      subOrderKey &&
-      row[subOrderKey] &&
-      row[subOrderKey].toString().trim().toLowerCase() === subOrderNo
-    ) {
-      return true;
-    }
-    return Object.values(row).some(
-      (v) => v && v.toString().trim().toLowerCase() === subOrderNo
-    );
-  });
-
-  if (!match) return res.status(404).json({ error: "Sub Order No not found" });
-
-  const listedPrice = parsePrice(
-    getColumnValue(match, [
-      "Supplier Listed Price (Incl. GST + Commission)",
-      "Supplier Listed Price",
-      "Listed Price",
-    ])
-  );
-
-  const discountedPrice = parsePrice(
-    getColumnValue(match, [
-      "Supplier Discounted Price (Incl GST and Commission)",
-      "Supplier Discounted Price (Incl GST and Commision)",
-      "Supplier Discounted Price",
-      "Discounted Price",
-    ])
-  );
-
-  res.json({
-    subOrderNo,
-    listedPrice,
-    discountedPrice,
-    profit: 500 - discountedPrice,
-  });
-});
-
-// ===== PDF Download API =====
 function formatINR(n) {
   const num = Number(n) || 0;
   return "₹" + num.toLocaleString("en-IN");
 }
-
 app.get("/download-pdf", (req, res) => {
   if (!latestData) return res.status(404).json({ error: "No data found" });
 
   const categorized = latestData.categories || {};
   const totals = latestData.totals || {};
-  const profitByDate = Array.isArray(latestData.profitByDate)
-    ? [...latestData.profitByDate]
-    : [];
-
-  profitByDate.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", "attachment; filename=dashboard-report.pdf");
@@ -304,44 +242,48 @@ app.get("/download-pdf", (req, res) => {
   const doc = new PDFDocument({ margin: 40, size: "A4" });
   doc.pipe(res);
 
-  doc.fontSize(18).font("Helvetica-Bold").text("📊 Dashboard Report", { align: "center" });
-  doc.moveDown(0.5);
-  doc.fontSize(10).font("Helvetica").text(`Generated: ${new Date().toLocaleString()}`, { align: "center" });
-  doc.moveDown(1.5);
+  doc.fontSize(18).font("Helvetica-Bold").text(" Dashboard Report", { align: "center" });
+  doc.moveDown(1);
 
-  doc.font("Helvetica-Bold").fontSize(12).text("Summary Metrics");
-  doc.moveDown(0.5);
+  const metrics = [
+    ["All Orders", (categorized.all || []).length || 0],
+    ["RTO", (categorized.rto || []).length || 0],
+    ["Door Step Exchanged", (categorized.door_step_exchanged || []).length || 0],
+    ["Delivered (count / discounted total)", `${totals?.sellInMonthProducts || 0} / ₹${totals?.deliveredSupplierDiscountedPriceTotal || 0}`],
+    ["Cancelled", (categorized.cancelled || []).length || 0],
+    ["Pending", (categorized.ready_to_ship || []).length || 0],
+    ["Shipped", (categorized.shipped || []).length || 0],
+    ["Other", (categorized.other || []).length || 0],
+    ["Supplier Listed Total Price", `₹${totals?.totalSupplierListedPrice || 0}`],
+    ["Supplier Discounted Total Price", `₹${totals?.totalSupplierDiscountedPrice || 0}`],
+    ["Total Profit", `₹${totals?.totalProfit || 0}`],
+    ["Profit %", `${totals?.profitPercent || "0.00"}%`],
+  ];
 
-  const metrics = {
-    "All Orders": (categorized.all || []).length || 0,
-    "RTO": (categorized.rto || []).length || 0,
-    "Door Step Exchanged": (categorized.door_step_exchanged || []).length || 0,
-    "Delivered (count / discounted total)":
-      `${totals?.sellInMonthProducts || 0} /${formatINR(totals?.deliveredSupplierDiscountedPriceTotal || 0)}`,
-    "Cancelled": (categorized.cancelled || []).length || 0,
-    "Pending": (categorized.ready_to_ship || []).length || 0,
-    "Shipped": (categorized.shipped || []).length || 0,
-    "Other": (categorized.other || []).length || 0,
-    "Supplier Listed Total Price": formatINR(totals?.totalSupplierListedPrice || 0),
-    "Supplier Discounted Total Price": formatINR(totals?.totalSupplierDiscountedPrice || 0),
-    "Total Profit": formatINR(totals?.totalProfit || 0),
-    "Profit %": `${totals?.profitPercent || "0.00"}%`,
-  };
+  const startX = doc.x;
+  let startY = doc.y;
+  const col1Width = 250;
+  const col2Width = 150;
+  const rowHeight = 20;
 
-  Object.entries(metrics).forEach(([k, v]) => {
-    doc.text(`${k}: ${v}`);
-  });
+  doc.rect(startX, startY, col1Width, rowHeight).stroke();
+  doc.rect(startX + col1Width, startY, col2Width, rowHeight).stroke();
+  doc.font("Helvetica-Bold").text("Metric", startX + 5, startY + 5, { width: col1Width - 10 });
+  doc.text("Value", startX + col1Width + 5, startY + 5, { width: col2Width - 10 });
+  startY += rowHeight;
 
-  doc.moveDown(2);
-  doc.font("Helvetica-Bold").fontSize(12).text("Profit By Date");
-  profitByDate.forEach((p) => {
-    doc.text(`${p.date}: ${formatINR(p.profit || 0)}`);
+  doc.font("Helvetica");
+  metrics.forEach(([metric, value], i) => {
+    doc.rect(startX, startY, col1Width, rowHeight).stroke();
+    doc.rect(startX + col1Width, startY, col2Width, rowHeight).stroke();
+    doc.text(metric, startX + 5, startY + 5, { width: col1Width - 10 });
+    doc.text(value.toString(), startX + col1Width + 5, startY + 5, { width: col2Width - 10 });
+    startY += rowHeight;
   });
 
   doc.end();
 });
 
-// ===== Start Server =====
 app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(` Server running on http://localhost:${PORT}`)
 );
